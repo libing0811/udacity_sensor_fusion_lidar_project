@@ -83,18 +83,18 @@ void cityBlock(pcl::visualization::PCLVisualizer::Ptr& viewer, ProcessPointCloud
     //implement all the function without PCL
 
     //1. Filtering & Downsampling + ROI Filtering
-    pcl::PointCloud<pcl::PointXYZI>::Ptr filterCloud= pointProcessorI->FilterCloud(inputCloud, 0.2f, Eigen::Vector4f (-20, -6, -2, 1), Eigen::Vector4f ( 50, 6, 2, 1));
+    pcl::PointCloud<pcl::PointXYZI>::Ptr filterCloud= pointProcessorI->FilterCloud(inputCloud, 0.2f, Eigen::Vector4f (-10, -6, -2, 1), Eigen::Vector4f ( 50, 6, 2, 1));
     //renderPointCloud(viewer,filterCloud,"filterCloud");
 
     //2. Segmentation (Ground and Obstacle) .. with RANSAC
-    std::pair<pcl::PointCloud<pcl::PointXYZI>::Ptr, pcl::PointCloud<pcl::PointXYZI>> segmentCloud=pointProcessorI->SegementPlaneWithoutPCL(filterCloud, 1000, 0.2);
+    std::pair<pcl::PointCloud<pcl::PointXYZI>::Ptr, pcl::PointCloud<pcl::PointXYZI>::Ptr> segmentCloud=pointProcessorI->SegmentPlaneWithoutPCL(filterCloud, 100, 0.2);
     //std::pair<pcl::PointCloud<pcl::PointXYZI>::Ptr, pcl::PointCloud<pcl::PointXYZI>::Ptr> segmentCloud = pointProcessorI->SegmentPlane(filterCloud, 1000, 0.2);
     //renderPointCloud(viewer,segmentCloud.first,"obstCloud",Color(1,0,0));
-    //renderPointCloud(viewer,segmentCloud.second,"planeCloud",Color(0,1,0));
+    renderPointCloud(viewer,segmentCloud.second,"planeCloud",Color(0,1,0));
 
     //3. Clustering Obstacle .. with KD_Tree and Clustering.
-    std::vector<pcl::PointCloud<pcl::PointXYZI>::Ptr> cloudClusters= pointProcessorI->ClusteringWithoutPCL(segmentCloud.first, 0.5 , 50, 800);
-    //std::vector<pcl::PointCloud<pcl::PointXYZI>::Ptr> cloudClusters = pointProcessorI->Clustering(segmentCloud.first, 0.5 , 50, 800);
+    std::vector<pcl::PointCloud<pcl::PointXYZI>::Ptr> cloudClusters= pointProcessorI->ClusteringWithoutPCL(segmentCloud.first, 0.5 , 10, 1000);
+    //std::vector<pcl::PointCloud<pcl::PointXYZI>::Ptr> cloudClusters = pointProcessorI->Clustering(segmentCloud.first, 0.5 , 20, 800);
     //
 
     int clusterId = 0;
@@ -146,7 +146,7 @@ int main (int argc, char** argv)
     std::cout << "starting enviroment" << std::endl;
 
     pcl::visualization::PCLVisualizer::Ptr viewer (new pcl::visualization::PCLVisualizer ("3D Viewer"));
-    CameraAngle setAngle = XY;
+    CameraAngle setAngle = FPS;
     initCamera(setAngle, viewer);
     //simpleHighway(viewer);
     ProcessPointClouds<pcl::PointXYZI>* pointProcessorI = new ProcessPointClouds<pcl::PointXYZI>();
