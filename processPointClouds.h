@@ -17,6 +17,7 @@
 #include <vector>
 #include <ctime>
 #include <chrono>
+#include <unordered_set>
 #include "render/box.h"
 #include "quiz/cluster/kdtree.h"
 
@@ -50,6 +51,8 @@ public:
     typename pcl::PointCloud<PointT>::Ptr loadPcd(std::string file);
 
     std::vector<boost::filesystem::path> streamPcd(std::string dataPath);
+    
+    void proximity(std::vector<int>& cluster,int id,std::vector<bool>& processed ,KdTree * tree, typename pcl::PointCloud<PointT>::Ptr cloud ,float distanceTol);
   
 };
 #endif /* PROCESSPOINTCLOUDS_H_ */
