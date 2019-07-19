@@ -195,13 +195,13 @@ std::pair<typename pcl::PointCloud<PointT>::Ptr, typename pcl::PointCloud<PointT
     }
 
     //get RANSAC plane in inlierResult.
-    pcl::PointCloud<pcl::PointXYZ>::Ptr cloudInliers(new pcl::PointCloud<pcl::PointXYZ>());
-	pcl::PointCloud<pcl::PointXYZ>::Ptr cloudOutliers(new pcl::PointCloud<pcl::PointXYZ>());
+    typename pcl::PointCloud<PointT>::Ptr cloudInliers(new pcl::PointCloud<PointT>());
+	typename pcl::PointCloud<PointT>::Ptr cloudOutliers(new pcl::PointCloud<PointT>());
 
 	for(int index = 0; index < cloud->points.size(); index++)
 	{
-		pcl::PointXYZ point = cloud->points[index];
-		if(inlierResult.count(index))
+		PointT point = cloud->points[index];
+		if(inliersResult.count(index))
 			cloudInliers->points.push_back(point);
 		else
 			cloudOutliers->points.push_back(point);
@@ -230,7 +230,7 @@ std::vector<typename pcl::PointCloud<PointT>::Ptr> ProcessPointClouds<PointT>::C
     tree->setInputCloud (cloud);
 
     std::vector<pcl::PointIndices> cluster_indices;
-    pcl::<PointT> ec;
+    pcl::EuclideanClusterExtraction<PointT> ec;
     ec.setClusterTolerance (clusterTolerance); // 2cm
     ec.setMinClusterSize (minSize);
     ec.setMaxClusterSize (maxSize);
@@ -272,8 +272,13 @@ std::vector<typename pcl::PointCloud<PointT>::Ptr> ProcessPointClouds<PointT>::C
 
     //init kd-tree
     KdTree* tree = new KdTree;
-    for (int i=0; i<cloud->points.size(); i++) 
-    	tree->insert(cloud->points[i],i); 
+    for (int i=0; i<cloud->points.size(); i++) {
+      std::vector<float> point;
+      point.push_back(cloud->points[i].x);
+      point.push_back(cloud->points[i].y);
+      point.push_back(cloud->points[i].z);
+    	tree->insert(point,i); 
+    }
 
 
     //clustering
@@ -287,7 +292,7 @@ std::vector<typename pcl::PointCloud<PointT>::Ptr> ProcessPointClouds<PointT>::C
         
         std::vector<int> cluster;
         
-        proximity(cluster, i, processed , tree, cloud->points, clusterTolerance);
+        proximity(cluster, i, processed , tree, cloud, clusterTolerance);
 
         //min size & max size 
         if(cluster.size()<minSize || cluster.size()>maxSize)
@@ -299,25 +304,31 @@ std::vector<typename pcl::PointCloud<PointT>::Ptr> ProcessPointClouds<PointT>::C
     //get clusters's id 
     for(std::vector<int> clusterIds : clusters)
   	{
-  		pcl::PointCloud<PointT>::Ptr clusterCloud(new pcl::PointCloud<PointT>());
+  		typename pcl::PointCloud<PointT>::Ptr clusterCloud(new pcl::PointCloud<PointT>());
   		for(int indice: clusterIds)
-  			clusterCloud->points.push_back(PointT(cloud->points[indice][0],cloud->points[indice][1],cloud->points[indice][2],cloud->points[indice][3]));
+  			clusterCloud->points.push_back(cloud->points[indice]);
   		
-        result->push_back(clusterCloud);
+        result.push_back(clusterCloud);
   	}
 
 	return result;
 }
 
-void proximity(std::vector<int>& cluster,int id,std::vector<bool>& processed ,KdTree * tree,typename const std::vector<PointT>& points,float distanceTol){
+template<typename PointT>
+void ProcessPointClouds<PointT>::proximity(std::vector<int>& cluster,int id,std::vector<bool>& processed ,KdTree * tree, typename pcl::PointCloud<PointT>::Ptr cloud ,float distanceTol){
 	
     cluster.push_back(id);
     processed[id]=true;
-        
-    std::vector<int> neighbors=tree->search(points[id], distanceTol);
+    
+    std::vector<float> target;
+    target.push_back(cloud->points[id].x);
+    target.push_back(cloud->points[id].y);
+    target.push_back(cloud->points[id].z);
+    
+    std::vector<int> neighbors=tree->search(target, distanceTol);
     for(int neighborIndex : neighbors){
         if(processed[neighborIndex]==false){
-            proximity(cluster, neighborIndex,processed, tree, points, distanceTol);
+            proximity(cluster, neighborIndex,processed, tree, cloud, distanceTol);
         }
     }
 }
